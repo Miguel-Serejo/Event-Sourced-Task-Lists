@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 use Spatie\EventProjector\Models\StoredEvent;
 
-use Spatie\EventProjector\Facades\EventProjectionist;
+use Spatie\EventProjector\Facades\Projectionist;
 
 use Illuminate\Support\Facades\DB;
 
@@ -77,7 +77,7 @@ class TaskListController extends Controller
 
   public function reset()
   {
-    foreach(EventProjectionist::getProjectors() as $projector) {
+    foreach(Projectionist::getProjectors() as $projector) {
       $projector->reset();
     }
 

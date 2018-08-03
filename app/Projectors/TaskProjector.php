@@ -7,6 +7,7 @@ use App\Task;
 use App\Events\TaskCreated;
 use App\Events\TaskDeleted;
 use App\Events\TaskMarkedComplete;
+use App\Events\TaskMarkedIncomplete;
 
 use Spatie\EventProjector\Projectors\Projector;
 use Spatie\EventProjector\Projectors\ProjectsEvents;
@@ -20,6 +21,7 @@ class TaskProjector implements Projector
   */
   protected $handlesEvents = [
     TaskMarkedComplete::class,
+    TaskMarkedIncomplete::class,
     TaskCreated::class,
     TaskDeleted::class,
   ];
@@ -38,6 +40,13 @@ class TaskProjector implements Projector
   {
     $task = Task::where('uuid', $event->taskAttributes['uuid'])->update([
       'completed_at' => now(),
+    ]);
+  }
+
+  public function onTaskMarkedIncomplete(TaskMarkedIncomplete $event) : void
+  {
+    $task = Task::where('uuid', $event->taskAttributes['uuid'])->update([
+      'completed_at' => null,
     ]);
   }
 

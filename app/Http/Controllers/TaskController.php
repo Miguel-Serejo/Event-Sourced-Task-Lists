@@ -88,6 +88,21 @@ class TaskController extends Controller
     return back();
   }
 
+  /**
+  * Complete a collection of tasks
+  *
+  * @param  \Illuminate\Http\Request  $request
+  * @return \Illuminate\Http\Response
+  */
+  public function uncomplete(Request $request)
+  {
+    $tasks = $request->get('tasks', []);
+    foreach ($tasks as $taskUuid) {
+      Task::where('uuid', $taskUuid)->first()->markIncomplete();
+    }
+    return back();
+  }
+
   public function seed(TaskList $list)
   {
     $new_task_number = 10; //rand(3, 10);

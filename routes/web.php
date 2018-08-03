@@ -22,6 +22,7 @@ Route::prefix('lists/{list}')->group(function() {
   Route::post('tasks', 'TaskController@store')->name('tasks.store');
   Route::post('tasks/seed', 'TaskController@seed')->name('tasks.seed');
   Route::post('tasks/complete', 'TaskController@complete')->name('tasks.complete');
+  Route::post('tasks/uncomplete', 'TaskController@uncomplete')->name('tasks.uncomplete');
   Route::delete('tasks/{task}', 'TaskController@destroy')->name('tasks.destroy');
 });
 

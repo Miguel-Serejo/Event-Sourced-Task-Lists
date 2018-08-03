@@ -44,6 +44,13 @@ class Task extends Model
     }
   }
 
+  public function markIncomplete() : void
+  {
+    if ( $this->isComplete()) {
+      event(new TaskMarkedIncomplete(array_merge($this->getAttributes())));
+    }
+  }
+
   public function erase() : void
   {
     if ( $this->exists ) {

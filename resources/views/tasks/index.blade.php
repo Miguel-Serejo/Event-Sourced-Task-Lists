@@ -44,9 +44,7 @@
           @foreach ($tasks as $task)
             <tr>
               <td>
-                @if ( ! $task->isComplete() )
                   <input form="selected" type="checkbox" value="{{$task->uuid}}" name="tasks[]">
-                @endif
               </td>
               <td title="{{$task->uuid}}">{{substr($task->uuid, 0, 8)}}</td>
               <td>{{$task->title}}</td>
@@ -62,9 +60,10 @@
             </tr>
           @endforeach
         </table>
-        <form id="selected" method="post" action="{{route('tasks.complete', ['listUuid' => $current_list])}}">
+        <form id="selected" method="post">
           @csrf
-          <button class="btn btn-primary" type="submit">Mark Complete</button>
+          <button class="btn btn-primary" type="submit" formaction="{{route('tasks.complete', ['listUuid' => $current_list])}}">Mark Complete</button>
+          <button class="btn btn-primary" type="submit" formaction="{{route('tasks.uncomplete', ['listUuid' => $current_list])}}">Mark Incomplete</button>
         </form>
       </div>
       <div class="col-12 col-xl-2">

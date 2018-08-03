@@ -4,7 +4,7 @@ namespace App\Http\Controllers\History;
 
 use App\Projectors\HistoryProjector;
 
-use Spatie\EventProjector\Facades\EventProjectionist;
+use Spatie\EventProjector\Facades\Projectionist;
 
 use Illuminate\Support\Facades\Session;
 
@@ -22,17 +22,17 @@ class Controller extends BaseController
       if ($eventId == 0) {
         return $this->reset();
       }
-      $projector = EventProjectionist::addProjector(HistoryProjector::class)->getProjector(HistoryProjector::class);
+      $projector = Projectionist::addProjector(HistoryProjector::class)->getProjector(HistoryProjector::class);
       $projector->reset();
       $projector->setTargetEventId($eventId);
-      EventProjectionist::replayEvents(collect([$projector]));
+      Projectionist::replay(collect([$projector]));
       Session::put('history_current_event', $eventId);
       return redirect('history');
     }
 
     public function reset()
     {
-      $projector = EventProjectionist::addProjector(HistoryProjector::class)->getProjector(HistoryProjector::class);
+      $projector = Projectionist::addProjector(HistoryProjector::class)->getProjector(HistoryProjector::class);
       $projector->reset();
       Session::put('history_current_event', 0);
 
