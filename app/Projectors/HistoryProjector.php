@@ -13,6 +13,7 @@ use App\Events\TaskListCreated;
 use App\Events\TaskListDeleted;
 use App\Events\MilestoneAchieved;
 use App\Events\TaskMarkedComplete;
+use App\Events\TaskMarkedIncomplete;
 
 use Illuminate\Support\Carbon;
 
@@ -35,6 +36,7 @@ class HistoryProjector implements Projector
     TaskListCreated::class,
     TaskListDeleted::class,
     TaskMarkedComplete::class,
+    TaskMarkedIncomplete::class,
     MilestoneAchieved::class,
   ];
 
@@ -69,7 +71,10 @@ class HistoryProjector implements Projector
       return;
     }
     $tasks = Session::get('tasks', collect());
-
+    if ($tasks->where('uuid', $storedEvent->event->taskAttributes['uuid'])->count()) {
+      // Task has already been created, do nothing.
+      return;
+    }
     $newTask = new Task([
       'title' => $storedEvent->event->taskAttributes['title'],
       'comment' => $storedEvent->event->taskAttributes['comment'],
@@ -91,6 +96,11 @@ class HistoryProjector implements Projector
       return;
     }
     $tasks = Session::get('tasks', collect());
+    if (! $tasks->where('uuid', $storedEvent->event->taskAttributes['uuid'])->count()) {
+      // Task doesn't exist, do nothing.
+      return;
+    }
+
     $tasks = $tasks->reject(function ($item) use ($storedEvent){
       return $item->uuid == $storedEvent->event->taskAttributes['uuid'];
     });
@@ -106,6 +116,11 @@ class HistoryProjector implements Projector
       return;
     }
     $taskLists = Session::get('taskLists', collect());
+
+    if ($taskLists->where('uuid', $storedEvent->event->taskListAttributes['uuid'])->count()) {
+      // Task List has already been created, do nothing.
+      return;
+    }
 
     $newTaskList = new TaskList([
       'name' => $storedEvent->event->taskListAttributes['name'],
@@ -125,6 +140,10 @@ class HistoryProjector implements Projector
       return;
     }
     $taskLists = Session::get('taskLists', collect());
+    if (! $taskLists->where('uuid', $storedEvent->event->taskListAttributes['uuid'])->count()) {
+      // Task List doesn't exist, do nothing.
+      return;
+    }
     $taskLists = $taskLists->reject(function ($item) use ($storedEvent){
       return $item->uuid == $storedEvent->event->taskListAttributes['uuid'];
     });
@@ -140,11 +159,34 @@ class HistoryProjector implements Projector
     }
     $tasks = Session::get('tasks', collect());
     $task = $tasks->where('uuid', $storedEvent->event->taskAttributes['uuid'])->first();
+    if ($task === null || $task->completed_at !== null) {
+      // Task is already complete, or doesn't exist. Do nothing.
+      return;
+    }
     $task->completed_at = $storedEvent->event->taskAttributes['completed_at'];
 
     Session::put('tasks', $tasks);
 
     $this->incrementStatistic('Tasks Completed');
+  }
+
+  public function onTaskMarkedIncomplete(StoredEvent $storedEvent) : void
+  {
+    if ($this->getTargetEventId() < $storedEvent->id) {
+      return;
+    }
+    $tasks = Session::get('tasks', collect());
+    $task = $tasks->where('uuid', $storedEvent->event->taskAttributes['uuid'])->first();
+    if ($task === null || $task->completed_at === null) {
+      //Task is already incomplete, or doesn't exist. Do nothing
+      return;
+    }
+
+    $task->completed_at = null;
+
+    Session::put('tasks', $tasks);
+
+    $this->decrementStatistic('Tasks Completed');
   }
 
   public function onMilestoneAchieved(StoredEvent $storedEvent) : void
@@ -153,6 +195,11 @@ class HistoryProjector implements Projector
       return;
     }
     $milestones = Session::get('milestones', collect());
+
+    if ($milestones->where('text', $storedEvent->event->milestoneAttributes['text'])->count()) {
+      // Milestone has already been created, do nothing.
+      return;
+    }
 
     $milestone = new Milestone([
       'text' => $storedEvent->event->milestoneAttributes['text'],
