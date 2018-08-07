@@ -37,35 +37,58 @@ class StatisticsProjector implements Projector
        Statistic::truncate();
    }
 
-    public function onTaskCreated(TaskCreated $event) {
-      Statistic::firstOrCreate(['name' => 'Tasks Created'], ['value' => 0])->increment('value');
+    public function onTaskCreated(StoredEvent $storedEvent) {
+      if( $storedEvent->meta_data['undo'] ) {
+        Statistic::where('name', 'Tasks Deleted')->first()->decrement('value');
+      } else {
+        Statistic::firstOrCreate(['name' => 'Tasks Created'], ['value' => 0])->increment('value');
+      }
       Statistic::firstOrCreate(['name' => 'Active Tasks'], ['value' => 0])->increment('value');
     }
 
     public function onTaskDeleted(StoredEvent $storedEvent) {
       $model_already_deleted = StoredEvent::where('event_class', TaskDeleted::class)
                                           ->where('event_properties->taskAttributes->uuid', '=', $storedEvent->event->taskAttributes['uuid'])
+                                          ->whereNull('meta_data->undone')
                                           ->where('id', '<', $storedEvent->id)
                                           ->exists();
-      if ( ! $model_already_deleted ) {
+      if ( $model_already_deleted ) {
+        return;
+      }
+      Statistic::firstOrCreate(['name' => 'Active Tasks'], ['value' => 0])->decrement('value');
+
+      if( $storedEvent->meta_data['undo'] ) {
+        Statistic::where('name', 'Tasks Created')->first()->decrement('value');
+      } else {
         Statistic::firstOrCreate(['name' => 'Tasks Deleted'], ['value' => 0])->increment('value');
-        Statistic::firstOrCreate(['name' => 'Active Tasks'], ['value' => 0])->decrement('value');
       }
     }
 
-    public function onTaskListCreated(TaskListCreated $event) {
-      Statistic::firstOrCreate(['name' => 'Task Lists Created'], ['value' => 0])->increment('value');
+    public function onTaskListCreated(StoredEvent $storedEvent) {
+      if( $storedEvent->meta_data['undo'] ) {
+        Statistic::where('name', 'Task Lists Deleted')->first()->decrement('value');
+      } else {
+        Statistic::firstOrCreate(['name' => 'Task Lists Created'], ['value' => 0])->increment('value');
+      }
       Statistic::firstOrCreate(['name' => 'Active Task Lists'], ['value' => 0])->increment('value');
     }
 
     public function onTaskListDeleted(StoredEvent $storedEvent) {
       $model_already_deleted = StoredEvent::where('event_class', TaskListDeleted::class)
-                                          ->where('event_properties->taskAttributes->uuid', '=', $storedEvent->event->taskListAttributes['uuid'])
+                                          ->where('event_properties->taskListAttributes->uuid', '=', $storedEvent->event->taskListAttributes['uuid'])
+                                          ->whereNull('meta_data->undone')
                                           ->where('id', '<', $storedEvent->id)
                                           ->exists();
-      if ( ! $model_already_deleted ) {
+      if ( $model_already_deleted ) {
+        return; // Duplicate event, do nothing
+      }
+
+      Statistic::firstOrCreate(['name' => 'Active Task Lists'], ['value' => 0])->decrement('value');
+
+      if ( $storedEvent->meta_data['undo'] ) {
+        Statistic::where('name', 'Task Lists Created')->first()->decrement('value');
+      } else {
         Statistic::firstOrCreate(['name' => 'Task Lists Deleted'], ['value' => 0])->increment('value');
-        Statistic::firstOrCreate(['name' => 'Active Task Lists'], ['value' => 0])->decrement('value');
       }
     }
 
@@ -87,7 +110,7 @@ class StatisticsProjector implements Projector
                                                ->orderByDesc('id')
                                                ->first();
       if ( $last_task_incomplete_event !== null && $last_task_complete_event->id < $last_task_incomplete_event->id  ) {
-        //Task was completed, then markes as incomplete, and hasn't been completed again since
+        //Task was completed, then marked as incomplete, and hasn't been completed again since
         Statistic::firstOrCreate(['name' => 'Tasks Completed'], ['value' => 0])->increment('value');
       }
     }
@@ -110,7 +133,7 @@ class StatisticsProjector implements Projector
                                                ->first();
       if ($last_task_incomplete_event === null || $last_task_complete_event->id > $last_task_incomplete_event->id) {
         //Task was completed, and hasn't been marked incomplete since
-        //This guarantees that the Tasks Completed statistic exists and is positive
+        //This means that the Tasks Completed statistic exists and is positive
         Statistic::where('name', 'Tasks Completed')->first()->decrement('value');
       }
     }

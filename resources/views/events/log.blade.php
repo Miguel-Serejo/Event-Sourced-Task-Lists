@@ -1,5 +1,6 @@
 <h1>Event Log</h1>
 <h6 class="text-muted">Hover for details</h6>
+<a href="{{ route('undo') }}">Undo</a>
 <table class="table table-hover table-responsive">
   <thead>
     <th>id</th>

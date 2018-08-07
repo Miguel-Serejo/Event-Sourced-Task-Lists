@@ -85,4 +85,10 @@ class TaskListController extends Controller
     DB::table('projector_statuses')->truncate();
     return redirect('/');
   }
+
+  public function destroy(TaskList $tasklist)
+  {
+    $tasklist->erase();
+    return back();
+  }
 }

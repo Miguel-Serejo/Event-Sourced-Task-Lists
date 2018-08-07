@@ -10,7 +10,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 
 class MilestoneAchieved implements ShouldBeStored
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
 
     /** @var array */
     public $milestoneAttributes;
